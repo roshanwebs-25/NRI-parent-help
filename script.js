@@ -30,8 +30,7 @@ function getBrandConfig() {
 function applyBranding() {
   const brand = getBrandConfig();
   const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-  
-  // Update page title with page context
+
   const pageNames = {
     'index.html': '',
     'about.html': 'About Us',
@@ -40,50 +39,76 @@ function applyBranding() {
     'our-promise.html': 'Our Promise',
     'contact.html': 'Get In Touch'
   };
-  
+
   const pageName = pageNames[currentPage] || '';
   const titleSuffix = pageName ? ` – ${brand.pageTitle.split('–')[1].trim()}` : ` – ${brand.pageTitle}`;
   document.title = pageName ? `${pageName}${titleSuffix}` : brand.pageTitle;
-  
-  // Update meta description
+
   const metaDesc = document.querySelector('meta[name="description"]');
-  if (metaDesc) {
-    metaDesc.setAttribute('content', brand.metaDescription);
-  }
-  
+  if (metaDesc) metaDesc.setAttribute('content', brand.metaDescription);
+
   // Hide logo images in navbar and footer
   document.querySelectorAll('.navbar-logo img, .footer-brand-logo img').forEach(img => {
     img.style.display = 'none';
   });
 
-  // Update all brand-name elements
   document.querySelectorAll('.brand-name').forEach(el => {
     el.textContent = brand.name;
   });
-  
-  // Update navbar brand
+
   const navbarBrand = document.querySelector('.navbar-logo-text span');
-  if (navbarBrand) {
-    navbarBrand.textContent = brand.name;
-  }
-  
-  // Update navbar tagline
+  if (navbarBrand) navbarBrand.textContent = brand.name;
+
   const navbarTagline = document.querySelector('.navbar-logo-text small');
-  if (navbarTagline) {
-    navbarTagline.textContent = brand.tagline;
-  }
-  
-  // Update footer brand
+  if (navbarTagline) navbarTagline.textContent = brand.tagline;
+
   const footerBrand = document.querySelector('.footer-brand-logo span');
-  if (footerBrand) {
-    footerBrand.textContent = brand.name;
-  }
-  
-  // Update footer tagline
+  if (footerBrand) footerBrand.textContent = brand.name;
+
   const footerTagline = document.querySelector('.footer-tagline');
-  if (footerTagline) {
-    footerTagline.textContent = brand.tagline;
+  if (footerTagline) footerTagline.textContent = brand.tagline;
+
+  // GLOBAL DOM TEXT REPLACEMENT
+  const BRAND_PATTERN = /MedGaurdian|MedGuardian|medgaurdian|medguardian/gi;
+  const TAGLINE_PATTERN = /Care for Your Parents\s*[·•·]\s*With Complete Peace of Mind|Caring for Your Loved Ones\s*[·•·]\s*Every Single Day|Door to Doctor\s*[·•·]\s*Doctor to Door/gi;
+
+  function replaceInTextNode(node) {
+    let val = node.nodeValue;
+    BRAND_PATTERN.lastIndex = 0;
+    val = val.replace(BRAND_PATTERN, brand.name);
+    TAGLINE_PATTERN.lastIndex = 0;
+    val = val.replace(TAGLINE_PATTERN, brand.tagline);
+    node.nodeValue = val;
   }
+
+  function walkDOM(root) {
+    const skip = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA']);
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        if (skip.has(node.parentElement?.tagName)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    let node;
+    while ((node = walker.nextNode())) replaceInTextNode(node);
+  }
+
+  walkDOM(document.body);
+
+  BRAND_PATTERN.lastIndex = 0; TAGLINE_PATTERN.lastIndex = 0;
+  document.title = document.title
+    .replace(BRAND_PATTERN, brand.name)
+    .replace(TAGLINE_PATTERN, brand.tagline);
+
+  document.querySelectorAll('img[alt]').forEach(img => {
+    BRAND_PATTERN.lastIndex = 0;
+    img.alt = img.alt.replace(BRAND_PATTERN, brand.name);
+  });
+
+  document.querySelectorAll('[aria-label]').forEach(el => {
+    BRAND_PATTERN.lastIndex = 0;
+    el.setAttribute('aria-label', el.getAttribute('aria-label').replace(BRAND_PATTERN, brand.name));
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -96,7 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initParallaxOrbs();
 });
 
-/* ===== NAVBAR SCROLL SHADOW ===== */
 function initNavbar() {
   const navbar = document.getElementById('navbar');
   if (!navbar) return;
@@ -105,7 +129,6 @@ function initNavbar() {
   onScroll();
 }
 
-/* ===== ACTIVE NAV LINK ===== */
 function setActiveNav() {
   const page = window.location.pathname.split('/').pop() || 'index.html';
   document.querySelectorAll('.navbar-nav a, .mobile-nav a').forEach(link => {
@@ -116,19 +139,10 @@ function setActiveNav() {
   });
 }
 
-/* ===== SCROLL ANIMATIONS =====
-   Strategy:
-   1. Only add .anim-ready to body AFTER confirming IntersectionObserver exists.
-   2. Immediately observe all elements — those already in viewport get .visible instantly.
-   3. No IntersectionObserver = content stays fully visible (no hidden elements).
-*/
 function initScrollAnimations() {
   if (!('IntersectionObserver' in window)) return;
-
   document.body.classList.add('anim-ready');
-
   const els = document.querySelectorAll('.fade-up, .fade-right, .fade-left, .fade-in');
-
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -137,36 +151,30 @@ function initScrollAnimations() {
       }
     });
   }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
-
   els.forEach(el => observer.observe(el));
 }
 
-/* ===== MOBILE MENU ===== */
 function initMobileMenu() {
   const hamburger = document.getElementById('hamburger');
   const mobileNav  = document.getElementById('mobileNav');
   const mobileClose = document.getElementById('mobileClose');
   if (!hamburger || !mobileNav) return;
-
   hamburger.addEventListener('click', () => {
     hamburger.classList.add('open');
     mobileNav.style.display = 'flex';
     requestAnimationFrame(() => mobileNav.classList.add('open'));
     document.body.style.overflow = 'hidden';
   });
-
   const close = () => {
     hamburger.classList.remove('open');
     mobileNav.classList.remove('open');
     document.body.style.overflow = '';
     setTimeout(() => { mobileNav.style.display = 'none'; }, 400);
   };
-
   if (mobileClose) mobileClose.addEventListener('click', close);
   mobileNav.querySelectorAll('a').forEach(a => a.addEventListener('click', close));
 }
 
-/* ===== SCROLL TO TOP BUTTON ===== */
 function initScrollTop() {
   if (!document.querySelector('.scroll-top')) {
     const btn = document.createElement('button');
@@ -184,7 +192,6 @@ function initScrollTop() {
   });
 }
 
-/* ===== PARALLAX HERO ORBS ON MOUSEMOVE ===== */
 function initParallaxOrbs() {
   const heroContent = document.querySelector('.hero-content');
   const heroOrb1 = document.querySelector('.hero-orb1');
@@ -198,18 +205,15 @@ function initParallaxOrbs() {
   });
 }
 
-/* ===== CONTACT FORM → WHATSAPP ===== */
 function submitContactForm(event) {
   event.preventDefault();
   const name    = (document.getElementById('contactName')?.value || '').trim();
   const phone   = (document.getElementById('contactPhone')?.value || '').trim();
   const service = (document.getElementById('contactService')?.value || '').trim();
-
   if (!name || !phone || !service) {
     alert('Please fill in all fields before submitting.');
     return;
   }
-
   const domain = window.location.hostname.toLowerCase();
   const brand = BrandConfig[domain] || BrandConfig['medgaurdian.com'];
   const text = 'Hello, I am interested in ' + brand.name + ' services.\n\nName: ' + name + '\nPhone: ' + phone + '\nService: ' + service;
