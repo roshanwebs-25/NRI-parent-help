@@ -106,6 +106,49 @@ function applyBranding() {
     BRAND_PATTERN.lastIndex = 0;
     el.setAttribute('aria-label', el.getAttribute('aria-label').replace(BRAND_PATTERN, brand.name));
   });
+
+  // EQUAL WIDTH: stretch brand name letter-spacing to match tagline width
+  equalizeLogoWidths();
+}
+
+/* ===== EQUAL WIDTH: Brand name matches tagline width ===== */
+function equalizeLogoWidths() {
+  // Pairs: [brandNameEl, taglineEl]
+  const pairs = [
+    [
+      document.querySelector('.navbar-logo-text span'),
+      document.querySelector('.navbar-logo-text small')
+    ],
+    [
+      document.querySelector('.footer-brand-logo span'),
+      document.querySelector('.footer-tagline')
+    ]
+  ];
+
+  pairs.forEach(([nameEl, taglineEl]) => {
+    if (!nameEl || !taglineEl) return;
+
+    // Reset any previous letter-spacing so measurement is clean
+    nameEl.style.letterSpacing = '0px';
+
+    // Measure natural widths after paint
+    requestAnimationFrame(() => {
+      const taglineW = taglineEl.getBoundingClientRect().width;
+      const nameW    = nameEl.getBoundingClientRect().width;
+      const charCount = nameEl.textContent.length;
+
+      if (charCount < 2 || taglineW <= 0) return;
+
+      // Extra pixels needed spread across (charCount - 1) gaps
+      const extraPx = taglineW - nameW;
+      const spacingPx = extraPx / (charCount - 1);
+
+      // Only apply if brand name is shorter than tagline
+      if (spacingPx > 0) {
+        nameEl.style.letterSpacing = spacingPx.toFixed(3) + 'px';
+      }
+    });
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -116,6 +159,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setActiveNav();
   initScrollTop();
   initParallaxOrbs();
+  // Re-equalize on resize (mobile/desktop switch)
+  window.addEventListener('resize', equalizeLogoWidths, { passive: true });
 });
 
 function initNavbar() {
